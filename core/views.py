@@ -1,6 +1,6 @@
-from django.shortcuts import render
+from rest_framework import serializers
+from rest_framework.viewsets import ViewSet
 
 
-
-class Quotes:
+class QuotesViewSet(ViewSet):
     pass

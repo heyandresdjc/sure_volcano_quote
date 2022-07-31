@@ -2,7 +2,7 @@ from array import array
 import uuid
 from django.db import models
 from django.shortcuts import reverse
-from validators import zip_code_validator
+from core.validators import zip_code_validator
 from django.utils.translation import gettext as _
 
 
@@ -21,9 +21,6 @@ class BaseModel(models.Model):
             f"id: {self.id} created: {self.created_at} last changed: {self.updated_at}"
         )
 
-    def get_absolute_url(self):
-        return reverse(f"{self.__class__.__name__}_detail", kwargs={"pk": self.pk})
-
 
 class Address(BaseModel):
 
@@ -38,13 +35,13 @@ class Address(BaseModel):
         verbose_name_plural = _("Addresses")
 
     def __str__(self):
-        return self.name
+        return self.address
 
     def get_absolute_url(self):
         return reverse("Address_detail", kwargs={"pk": self.pk})
 
 
-class Policy(models.Model):
+class Policy(BaseModel):
 
     policy_number = models.CharField(_("Policy Number"), max_length=50)
     is_active = models.BooleanField(_("Active"), default=True)
@@ -53,13 +50,10 @@ class Policy(models.Model):
 
     class Meta:
         verbose_name = _("Policy")
-        verbose_name_plural = _("Policys")
+        verbose_name_plural = _("Policies")
 
     def __str__(self):
-        return self.name
-
-    def get_absolute_url(self):
-        return reverse("Policy_detail", kwargs={"pk": self.pk})
+        return self.policy_number
 
 
 class Quote(BaseModel):
@@ -82,7 +76,7 @@ class Quote(BaseModel):
         _type_: Query Model Object
     """
 
-    quoute_number = models.CharField(_("Quote Number"), max_length=10, unique=True)
+    quote_number = models.CharField(_("Quote Number"), max_length=10, unique=True)
     effective_date = models.DateTimeField(
         _("Effective Date"), auto_now=False, auto_now_add=False
     )
@@ -100,11 +94,11 @@ class Quote(BaseModel):
         _("Monthly Term Premium"), max_digits=6, decimal_places=2
     )
 
-    total_additionl_fee = models.DecimalField(
-        _("Total Additonal Fee"), max_digits=6, decimal_places=2
+    total_additional_fee = models.DecimalField(
+        _("Total Additional Fee"), max_digits=6, decimal_places=2
     )
     total_monthly_fee = models.DecimalField(
-        _("Total Additonal Fee"), max_digits=6, decimal_places=2
+        _("Total Additional Fee"), max_digits=6, decimal_places=2
     )
 
     total_discount = models.DecimalField(
@@ -118,23 +112,20 @@ class Quote(BaseModel):
         verbose_name = _("Quote")
         verbose_name_plural = _("Quotes")
         indexes = [
-            models.Index(fields=["quoute_number"]),
+            models.Index(fields=["quote_number"]),
             models.Index(
                 fields=[
-                    "quoute_number",
+                    "quote_number",
                     "effective_date",
                 ]
             ),
             models.Index(
                 fields=[
-                    "quoute_number",
-                    "is_active",
-                ]
+                    "quote_number"
+                ],
+                name="quote_number_unique"
             ),
         ]
 
     def __str__(self):
-        return self.name
-
-    def get_absolute_url(self):
-        return reverse("Quote_detail", kwargs={"pk": self.pk})
+        return self.quote_number
