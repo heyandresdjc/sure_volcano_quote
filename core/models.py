@@ -2,7 +2,7 @@ from array import array
 import uuid
 from django.db import models
 from django.shortcuts import reverse
-from core.validators import zip_code_validator
+from core.validators import zip_code_validator, state_validator
 from django.utils.translation import gettext as _
 
 
@@ -25,7 +25,7 @@ class BaseModel(models.Model):
 class Address(BaseModel):
 
     address = models.CharField(_("Address"), max_length=150)
-    state = models.CharField(_("state"), max_length=50)
+    state = models.CharField(_("state"), max_length=50, validators=[state_validator])
     zip_code = models.CharField(
         _("Zip Code"), max_length=10, validators=[zip_code_validator]
     )
@@ -76,6 +76,8 @@ class Quote(BaseModel):
         _type_: Query Model Object
     """
 
+    policy_holder = models.CharField(max_length=150)
+
     quote_number = models.CharField(_("Quote Number"), max_length=10, unique=True)
     effective_date = models.DateTimeField(
         _("Effective Date"), auto_now=False, auto_now_add=False
@@ -119,12 +121,7 @@ class Quote(BaseModel):
                     "effective_date",
                 ]
             ),
-            models.Index(
-                fields=[
-                    "quote_number"
-                ],
-                name="quote_number_unique"
-            ),
+            models.Index(fields=["quote_number"], name="quote_number_unique"),
         ]
 
     def __str__(self):

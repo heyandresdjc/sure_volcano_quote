@@ -7,11 +7,16 @@ name = "pypi"
 django = "*"
 djangorestframework = "*"
 pgeocode = "*"
+drf-yasg = "1.21.3"
+coverage = "*"
+usaddress = "*"
 
 [dev-packages]
 black = "*"
 pip-tools = "*"
 python-dotenv = "*"
+sphinx = "*"
+pydoctor = "*"
 
 [requires]
 python_version = "3.10"
