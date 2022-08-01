@@ -17,7 +17,6 @@ def zip_code_validator(zip_code: str) -> None:
 
 def state_validator(state_name: str) -> None:
     if state_name not in [st_name for st_name in states]:
-        print(state_name)
         raise ValidationError(
             _("%(value) is not valid state name"),
             params={"value": state_name},

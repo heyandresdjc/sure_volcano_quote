@@ -1,10 +1,7 @@
 import usaddress
 import logging
-from datetime import datetime
-
 from django.core.exceptions import ValidationError
-
-from core.models import Quote, Policy, Address
+from core.models import Quote, Address
 from core.constants import active_volcanos_states
 from django.utils.crypto import get_random_string
 
@@ -44,7 +41,8 @@ def address_parser(raw_address: str) -> Address | None:
             address=address, state=state_name, zip_code=zip_code
         )
         return addr
-    except ValidationError:
+    except ValidationError as ex:
+        logger.warning(msg="Validation issue", exc_info=ex)
         return None
 
 
@@ -100,40 +98,42 @@ def additional_discounts(never_cancel_volcano_policy: bool, new_property: bool) 
 
 
 def create_quote(
-    effective_date: datetime,
     had_previously_cancel_volcano_policy: bool,
     never_cancel_volcano_policy: bool,
     new_property: bool,
-    previously_cancel_policy: Policy = None,
+    previously_cancel_policy: bool = False,
     address: str = "1600 Pennsylvania Avenue NW, Washington, DC 20500",
 ) -> Quote | None:
 
     address = address_parser(address)
 
-    random_string_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-    quote_number = get_random_string(length=10, allowed_chars=random_string_chars)
+    quote_number = get_random_string(
+        length=10, allowed_chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    )
     fees = additional_fees(had_previously_cancel_volcano_policy, address.state)
     discounts = additional_discounts(never_cancel_volcano_policy, new_property)
 
-    total_term_premium = monthly_base_volcano_policy_price * term
-    total_monthly_premium = monthly_base_volcano_policy_price
+    base_monthly_premium = monthly_base_volcano_policy_price
 
-    total_monthly_fee = calculate_additional_fees(fees, total_monthly_premium)
+    total_monthly_fee = calculate_additional_fees(fees, base_monthly_premium)
 
-    total_monthly_discount = calculate_total_discount(discounts, total_monthly_premium)
+    total_monthly_discount = calculate_total_discount(discounts, base_monthly_premium)
+
+    total_monthly = (
+        base_monthly_premium
+        + (base_monthly_premium * total_monthly_fee)
+        + (base_monthly_premium * total_monthly_discount)
+    ) or base_monthly_premium
 
     try:
         return Quote.objects.create(
             quote_number=quote_number,
-            effective_date=effective_date,
             previously_cancel_policy=previously_cancel_policy,
-            total_term_premium=total_term_premium,
-            total_monthly_premium=total_monthly_premium,
-            total_additional_fee=100,
+            total_term_premium=total_monthly * term,
+            total_monthly_premium=total_monthly,
             total_monthly_fee=total_monthly_fee,
-            total_discount=100,
             total_monthly_discount=total_monthly_discount,
+            address=address,
         )
     except Exception as ex:
         logger.error(msg="Failed to create policy", exc_info=ex)

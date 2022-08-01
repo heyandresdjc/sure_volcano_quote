@@ -4,8 +4,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet, GenericViewSet
 from django.contrib.auth import get_user_model
-from core.models import Quote
-from core.services.services import create_quote
+from core.models import Quote, Policy
+from core.services.policies.services import checkout
+from core.services.quotes.services import create_quote
 
 User = get_user_model()
 
@@ -29,15 +30,13 @@ class QuotesViewSet(ViewSet, CreateModelMixin):
                 "never_cancel_volcano_policy",
                 "new_property",
                 "address",
-                "effective_date",
                 "policy_holder",
             )
 
     def create(self, request, *args, **kwargs):
         serializer = self.InputModelSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        create_quote(
-            effective_date=serializer.data["effective_date"],
+        quote = create_quote(
             had_previously_cancel_volcano_policy=serializer.data[
                 "had_previously_cancel_volcano_policy"
             ],
@@ -45,6 +44,30 @@ class QuotesViewSet(ViewSet, CreateModelMixin):
             new_property=serializer.data["new_property"],
             address=serializer.data["address"],
         )
+        headers = self.get_success_headers(serializer.data)
+
+        return Response(
+            {"quote_number": quote.quote_number},
+            status=status.HTTP_201_CREATED,
+            headers=headers,
+        )
+
+
+class CheckOutViewSet(ViewSet, CreateModelMixin):
+    queryset = Policy.objects.none()
+    permission_classes = [IsAuthenticated]
+
+    class InputModelSerializer(serializers.ModelSerializer):
+        quote_number = serializers.CharField(max_length=10)
+
+        class Meta:
+            model = Quote
+            fields = ("quote_number",)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.InputModelSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        checkout(quote_number=serializer.data["quote_number"])
         headers = self.get_success_headers(serializer.data)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers

@@ -46,7 +46,14 @@ class Policy(BaseModel):
     policy_number = models.CharField(_("Policy Number"), max_length=50)
     is_active = models.BooleanField(_("Active"), default=True)
     is_cancel = models.BooleanField(_("Cancel"), default=False)
-    address = models.CharField(_("Address"), max_length=150)
+    address = models.ForeignKey(to=Address, on_delete=models.CASCADE)
+    total_monthly_premium = models.DecimalField(
+        _("Monthly Term Premium"), max_digits=6, decimal_places=2
+    )
+    quote = models.ForeignKey("Quote", on_delete=models.SET_NULL, null=True)
+    effective_date = models.DateTimeField(
+        _("Effective Date"), auto_now=False, auto_now_add=False
+    )
 
     class Meta:
         verbose_name = _("Policy")
@@ -76,52 +83,31 @@ class Quote(BaseModel):
         _type_: Query Model Object
     """
 
-    policy_holder = models.CharField(max_length=150)
+    policy_holder = models.CharField(_("Policy Number"), max_length=150, null=True)
 
     quote_number = models.CharField(_("Quote Number"), max_length=10, unique=True)
-    effective_date = models.DateTimeField(
-        _("Effective Date"), auto_now=False, auto_now_add=False
-    )
-    previously_cancel_policy = models.ForeignKey(
-        "Policy",
-        verbose_name=_("Previously Cancel Policy"),
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-    )
+
+    previously_cancel_policy = models.BooleanField(default=False)
     total_term_premium = models.DecimalField(
         _("Total Term Premium"), max_digits=6, decimal_places=2
     )
     total_monthly_premium = models.DecimalField(
         _("Monthly Term Premium"), max_digits=6, decimal_places=2
     )
-
-    total_additional_fee = models.DecimalField(
-        _("Total Additional Fee"), max_digits=6, decimal_places=2
-    )
     total_monthly_fee = models.DecimalField(
         _("Total Additional Fee"), max_digits=6, decimal_places=2
-    )
-
-    total_discount = models.DecimalField(
-        _("Total Discount"), max_digits=6, decimal_places=2
     )
     total_monthly_discount = models.DecimalField(
         _("Total Discount Monthly Fee"), max_digits=6, decimal_places=2
     )
+    address = models.ForeignKey(to=Address, on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = _("Quote")
         verbose_name_plural = _("Quotes")
         indexes = [
-            models.Index(fields=["quote_number"]),
-            models.Index(
-                fields=[
-                    "quote_number",
-                    "effective_date",
-                ]
-            ),
             models.Index(fields=["quote_number"], name="quote_number_unique"),
+            models.Index(fields=["policy_holder"], name="policy_holder_unique"),
         ]
 
     def __str__(self):
