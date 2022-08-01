@@ -1,6 +1,7 @@
 from rest_framework import serializers, status
+from rest_framework.authtoken.models import Token
 from rest_framework.mixins import CreateModelMixin
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet, GenericViewSet
 from django.contrib.auth import get_user_model
@@ -76,12 +77,26 @@ class CheckOutViewSet(ViewSet, CreateModelMixin):
 
 class UserViewSet(CreateModelMixin, GenericViewSet):
     queryset = User.objects.none()
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     class UserSerializer(serializers.HyperlinkedModelSerializer):
         class Meta:
             model = User
-            fields = ["url", "username", "email"]
-
-    def get_serializer_class(self):
-        return self.UserSerializer
+            fields = ["username", "email", "password"]
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.UserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        headers = self.get_success_headers(serializer.data)
+        User = get_user_model()
+        user = User.objects.get(**serializer.data)
+        
+        obj, _ = Token.objects.get_or_create(user=user)
+        
+        return Response(
+            {
+                "token": obj.key
+            },
+            status=status.HTTP_201_CREATED, headers=headers
+        )

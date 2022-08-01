@@ -1,7 +1,12 @@
 import os
 import sys
+from time import sleep
 
 MODE = os.environ.get("MODE")
+
+
+if os.path.exists("db.sqlite3"):
+    os.remove("db.sqlite3")
 
 
 def docker_setup():
@@ -13,6 +18,8 @@ def docker_setup():
     os.system("docker compose build web")
     
     os.system("docker compose run web ./manage.py check")
+    
+    sleep(5)
 
     os.system("docker compose run web ./manage.py migrate")
 
