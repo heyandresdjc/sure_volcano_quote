@@ -6,23 +6,15 @@ MODE = os.environ.get("MODE")
 
 def docker_setup():
 
-    os.system("docker compose pull db")
-
-    os.system("docker compose build web")
-
-    os.system("docker compose up -d db")
-
-    print(
-        "Showing logs from DB when message `database system is ready to accept connections` shows up press CTL+C"
-    )
-
-    os.system("docker compose logs -f db")
-
-    os.system("docker compose run web ./manage.py migrate")
-
     create_folder_if_none("static")
 
     create_folder_if_none("staticfiles")
+
+    os.system("docker compose build web")
+    
+    os.system("docker compose run web ./manage.py check")
+
+    os.system("docker compose run web ./manage.py migrate")
 
     os.system("docker compose run web ./manage.py collectstatic --noinput")
 
